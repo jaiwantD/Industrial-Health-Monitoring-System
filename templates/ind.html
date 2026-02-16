@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Monitoring System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(30, 30, 46, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            color: #b0b0b0;
+            font-size: 1.2em;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-online {
+            background-color: #27ae60;
+        }
+
+        .status-offline {
+            background-color: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #2a2a3e 0%, #1e1e2e 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 5px solid;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .metric-card.temperature {
+            border-left-color: #e74c3c;
+        }
+
+        .metric-card.sound {
+            border-left-color: #3498db;
+        }
+
+        .metric-card.vibration {
+            border-left-color: #9b59b6;
+        }
+
+        .metric-card.impulse {
+            border-left-color: #f39c12;
+        }
+
+        .metric-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .temperature .metric-icon {
+            color: #e74c3c;
+        }
+
+        .sound .metric-icon {
+            color: #3498db;
+        }
+
+        .vibration .metric-icon {
+            color: #9b59b6;
+        }
+
+        .impulse .metric-icon {
+            color: #f39c12;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 1.1em;
+            color: #b0b0b0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-unit {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-card {
+            background: #2a2a3e;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-left: 5px solid;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-card.temperature-chart {
+            border-left-color: #e74c3c;
+        }
+
+        .chart-card.sound-chart {
+            border-left-color: #3498db;
+        }
+
+        .chart-card.vibration-chart {
+            border-left-color: #9b59b6;
+        }
+
+        .chart-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .timestamp {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(52, 152, 219, 0.2);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1.1em;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #b0b0b0;
+            font-size: 1.2em;
+        }
+
+        .loading i {
+            font-size: 2em;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #ffc107;
+            display: none;
+            position: relative;
+        }
+
+        .alert.show {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .alert-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-alert-btn {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            color: #ffc107;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .clear-alert-btn:hover {
+            background: rgba(255, 193, 7, 0.3);
+            transform: translateY(-1px);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .chart-wrapper {
+                height: 250px;
+            }
+        }
+
+        .history-section {
+            margin-top: 40px;
+            background: #2a2a3e;
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .history-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .alerts-history {
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 193, 7, 0.2);
+        }
+
+        .values-history {
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .history-subtitle {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9em;
+            color: #b0b0b0;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-time {
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        .clear-history-btn {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            float: right;
+            transition: all 0.3s ease;
+        }
+
+        .clear-history-btn:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-heartbeat"></i> Machine Health Monitoring System</h1>
+            <p>Real-time sensor data analytics dashboard</p>
+            <span class="status-indicator status-online" id="statusIndicator"></span>
+        </div>
+
+        <div class="alert" id="alertBox">
+            <div class="alert-content">
+                <div>
+                    <strong>Alert:</strong> <span id="alertMessage"></span>
+                </div>
+                <button class="clear-alert-btn" onclick="clearCurrentAlert()">
+                    <i class="fas fa-times"></i> Clear Alert
+                </button>
+            </div>
+        </div>
+
+        <div class="loading" id="loadingIndicator">
+            <i class="fas fa-spinner"></i>
+            <div>Loading sensor data...</div>
+        </div>
+
+        <div id="dashboardContent" style="display: none;">
+            <div class="metrics-grid">
+                <div class="metric-card temperature">
+                    <div class="metric-icon">
+                        <i class="fas fa-thermometer-half"></i>
+                    </div>
+                    <div class="metric-value" id="tempValue">--</div>
+                    <div class="metric-label">Temperature <span class="metric-unit">°C</span></div>
+                </div>
+
+                <div class="metric-card sound">
+                    <div class="metric-icon">
+                        <i class="fas fa-volume-up"></i>
+                    </div>
+                    <div class="metric-value" id="soundValue">--</div>
+                    <div class="metric-label">Sound Level <span class="metric-unit">dB</span></div>
+                </div>
+
+                <div class="metric-card vibration">
+                    <div class="metric-icon">
+                        <i class="fas fa-wave-square"></i>
+                    </div>
+                    <div class="metric-value" id="vibrationValue">--</div>
+                    <div class="metric-label">Vibration <span class="metric-unit">units</span></div>
+                </div>
+
+                <div class="metric-card impulse">
+                    <div class="metric-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="metric-value" id="impulseValue">--</div>
+                    <div class="metric-label">Impulse <span class="metric-unit">units</span></div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-card temperature-chart">
+                    <div class="chart-title">
+                        <i class="fas fa-thermometer-half"></i>
+                        Temperature Trend
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="temperatureChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card sound-chart">
+                    <div class="chart-title">
+                        <i class="fas fa-volume-up"></i>
+                        Sound Level Monitoring
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="soundChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card vibration-chart">
+                    <div class="chart-title">
+                        <i class="fas fa-wave-square"></i>
+                        Vibration Analysis (X, Y, Z Axes)
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="vibrationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timestamp" id="lastUpdate">
+                Last updated: --
+            </div>
+
+            <div class="history-section">
+                <div class="history-title">
+                    <i class="fas fa-history"></i>
+                    Historical Data & Alerts
+                </div>
+                <div class="history-grid">
+                    <div class="alerts-history">
+                        <div class="history-subtitle">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Recent Alerts
+                            <button class="clear-history-btn" onclick="clearAlertsHistory()">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                        <div class="history-list" id="alertsList">
+                            <div class="history-item">No alerts yet</div>
+                        </div>
+                    </div>
+                    <div class="values-history">
+                        <div class="history-subtitle">
+                            <i class="fas fa-chart-line"></i>
+                            Recent Values
+                            <button class="clear-history-btn" onclick="clearValuesHistory()">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                        <div class="history-list" id="valuesList">
+                            <div class="history-item">No data yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let temperatureChart, soundChart, vibrationChart;
+        let temperatureData = [];
+        let soundData = [];
+        let vibrationData = { x: [], y: [], z: [] };
+        let timeLabels = [];
+        const maxDataPoints = 50;
+        let isOnline = true;
+        let alertsHistory = [];
+        let valuesHistory = [];
+        let currentAlertActive = false;
+        let alertsCleared = new Set(); // Track cleared alert types
+
+        // Initialize charts
+        function initializeCharts() {
+            // Initialize with empty data points to establish chart dimensions
+            for (let i = 0; i < maxDataPoints; i++) {
+                timeLabels.push('');
+                temperatureData.push(null);
+                soundData.push(null);
+                vibrationData.x.push(null);
+                vibrationData.y.push(null);
+                vibrationData.z.push(null);
+            }
+
+            // Temperature Chart
+            const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+            temperatureChart = new Chart(tempCtx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: temperatureData,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 6,
+                        spanGaps: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#b0b0b0'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#b0b0b0'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#b0b0b0',
+                                maxTicksLimit: 8
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 750,
+                        easing: 'easeInOutQuart'
+                    },
+                    interaction: {
+                        intersect: false
+                    }
+                }
+            });
+
+            // Sound Chart
+            const soundCtx = document.getElementById('soundChart').getContext('2d');
+            soundChart = new Chart(soundCtx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Sound Level (dB)',
+                        data: soundData,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 6,
+                        spanGaps: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#b0b0b0'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#b0b0b0'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#b0b0b0',
+                                maxTicksLimit: 8
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 750,
+                        easing: 'easeInOutQuart'
+                    },
+                    interaction: {
+                        intersect: false
+                    }
+                }
+            });
+
+            // Vibration Chart
+            const vibrationCtx = document.getElementById('vibrationChart').getContext('2d');
+            vibrationChart = new Chart(vibrationCtx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [
+                        {
+                            label: 'X-Axis',
+                            data: vibrationData.x,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 1,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Y-Axis',
+                            data: vibrationData.y,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 1,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Z-Axis',
+                            data: vibrationData.z,
+                            borderColor: '#f39c12',
+                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 1,
+                            spanGaps: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#b0b0b0'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#b0b0b0'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#b0b0b0',
+                                maxTicksLimit: 8
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 750,
+                        easing: 'easeInOutQuart'
+                    },
+                    interaction: {
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // Fetch data from API
+        async function fetchSensorData() {
+            try {
+                const response = await fetch('/data');
+                const data = await response.json();
+                
+                if (data.timestamp) {
+                    updateDashboard(data);
+                    updateStatus(true);
+                } else {
+                    updateStatus(false);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                updateStatus(false);
+            }
+        }
+
+        // Update dashboard with new data
+        function updateDashboard(data) {
+            // Update metric cards
+            document.getElementById('tempValue').textContent = data.temp ? data.temp.toFixed(1) : '--';
+            document.getElementById('soundValue').textContent = data.sound ? data.sound.toFixed(1) : '--';
+            document.getElementById('impulseValue').textContent = data.impulse ? data.impulse.toFixed(1) : '--';
+            
+            // Calculate vibration magnitude
+            const vibrationMagnitude = data.X && data.Y && data.Z ? 
+                Math.sqrt(data.X * data.X + data.Y * data.Y + data.Z * data.Z).toFixed(1) : '--';
+            document.getElementById('vibrationValue').textContent = vibrationMagnitude;
+
+            // Update timestamp
+            const timestamp = new Date(data.timestamp).toLocaleString();
+            document.getElementById('lastUpdate').textContent = `Last updated: ${timestamp}`;
+
+            // Add to values history
+            addToValuesHistory(data);
+
+            // Update charts
+            updateCharts(data);
+
+            // Check for alerts (only if no current alert is active)
+            if (!currentAlertActive) {
+                checkAlerts(data);
+            }
+
+            // Show dashboard content
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+        }
+
+        // Update charts with new data
+        function updateCharts(data) {
+            const currentTime = new Date().toLocaleTimeString();
+
+            // Always maintain exactly maxDataPoints for consistent chart size
+            if (timeLabels.length >= maxDataPoints) {
+                // Remove oldest data points
+                timeLabels.shift();
+                temperatureData.shift();
+                soundData.shift();
+                vibrationData.x.shift();
+                vibrationData.y.shift();
+                vibrationData.z.shift();
+            }
+
+            // Add new data points
+            timeLabels.push(currentTime);
+            temperatureData.push(data.temp || 0);
+            soundData.push(data.sound || 0);
+            vibrationData.x.push(data.X || 0);
+            vibrationData.y.push(data.Y || 0);
+            vibrationData.z.push(data.Z || 0);
+
+            // Update chart data references
+            temperatureChart.data.labels = timeLabels;
+            temperatureChart.data.datasets[0].data = temperatureData;
+            
+            soundChart.data.labels = timeLabels;
+            soundChart.data.datasets[0].data = soundData;
+            
+            vibrationChart.data.labels = timeLabels;
+            vibrationChart.data.datasets[0].data = vibrationData.x;
+            vibrationChart.data.datasets[1].data = vibrationData.y;
+            vibrationChart.data.datasets[2].data = vibrationData.z;
+
+            // Update charts with smooth animation for data sliding
+            temperatureChart.update('active');
+            soundChart.update('active');
+            vibrationChart.update('active');
+        }
+
+        // Update connection status
+        function updateStatus(online) {
+            const statusIndicator = document.getElementById('statusIndicator');
+            if (online !== isOnline) {
+                isOnline = online;
+                statusIndicator.className = `status-indicator ${online ? 'status-online' : 'status-offline'}`;
+            }
+        }
+
+        // Check for alerts
+        function checkAlerts(data) {
+            const alerts = [];
+            const currentTime = new Date().toLocaleTimeString();
+            
+            if (data.temp > 38 && !alertsCleared.has('temperature')) {
+                alerts.push('High temperature detected!');
+            }
+            if (data.sound > 80 && !alertsCleared.has('sound')) {
+                alerts.push('High sound level detected!');
+            }
+            if ((data.X > 30 || data.Y > 30 || data.Z > 30) && !alertsCleared.has('vibration')) {
+                alerts.push('High vibration detected!');
+            }
+
+            const alertBox = document.getElementById('alertBox');
+            const alertMessage = document.getElementById('alertMessage');
+            
+            if (alerts.length > 0) {
+                alertMessage.textContent = alerts.join(' ');
+                alertBox.classList.add('show');
+                currentAlertActive = true;
+                
+                // Add to alerts history
+                addToAlertsHistory(alerts.join(' '), currentTime);
+            }
+        }
+
+        // Clear current alert
+        function clearCurrentAlert() {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.classList.remove('show');
+            currentAlertActive = false;
+            
+            // Mark current alert types as cleared (temporarily)
+            const alertMessage = document.getElementById('alertMessage').textContent;
+            if (alertMessage.includes('temperature')) alertsCleared.add('temperature');
+            if (alertMessage.includes('sound')) alertsCleared.add('sound');
+            if (alertMessage.includes('vibration')) alertsCleared.add('vibration');
+            
+            // Clear the cleared alerts after 30 seconds to allow new alerts
+            setTimeout(() => {
+                alertsCleared.clear();
+            }, 30000);
+        }
+
+        // Add to alerts history
+        function addToAlertsHistory(alert, time) {
+            alertsHistory.unshift({ message: alert, time: time });
+            if (alertsHistory.length > 10) {
+                alertsHistory.pop();
+            }
+            updateAlertsDisplay();
+        }
+
+        // Add to values history
+        function addToValuesHistory(data) {
+            const time = new Date().toLocaleTimeString();
+            const valueEntry = {
+                temp: data.temp?.toFixed(1) || '--',
+                sound: data.sound?.toFixed(1) || '--',
+                vibration: data.X && data.Y && data.Z ? 
+                    Math.sqrt(data.X * data.X + data.Y * data.Y + data.Z * data.Z).toFixed(1) : '--',
+                impulse: data.impulse?.toFixed(1) || '--',
+                time: time
+            };
+            valuesHistory.unshift(valueEntry);
+            if (valuesHistory.length > 10) {
+                valuesHistory.pop();
+            }
+            updateValuesDisplay();
+        }
+
+        // Update alerts display
+        function updateAlertsDisplay() {
+            const alertsList = document.getElementById('alertsList');
+            if (alertsHistory.length === 0) {
+                alertsList.innerHTML = '<div class="history-item">No alerts yet</div>';
+            } else {
+                alertsList.innerHTML = alertsHistory.map(alert => 
+                    `<div class="history-item">
+                        <div>${alert.message}</div>
+                        <div class="history-time">${alert.time}</div>
+                    </div>`
+                ).join('');
+            }
+        }
+
+        // Update values display
+        function updateValuesDisplay() {
+            const valuesList = document.getElementById('valuesList');
+            if (valuesHistory.length === 0) {
+                valuesList.innerHTML = '<div class="history-item">No data yet</div>';
+            } else {
+                valuesList.innerHTML = valuesHistory.map(value => 
+                    `<div class="history-item">
+                        <div>T: ${value.temp}°C | S: ${value.sound}dB | V: ${value.vibration} | I: ${value.impulse}</div>
+                        <div class="history-time">${value.time}</div>
+                    </div>`
+                ).join('');
+            }
+        }
+
+        // Clear alerts history
+        function clearAlertsHistory() {
+            alertsHistory = [];
+            updateAlertsDisplay();
+        }
+
+        // Clear values history
+        function clearValuesHistory() {
+            valuesHistory = [];
+            updateValuesDisplay();
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            fetchSensorData();
+            
+            // Set up periodic data fetching
+            setInterval(fetchSensorData, 500); // Update every 2 seconds
+        });
+    </script>
+</body>
+</html>
